@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ma To-Do</title>
+
+  <style>
+    body {
+      font-family: -apple-system, system-ui, Arial;
+      margin: 20px;
+    }
+    h1 {
+      font-size: 22px;
+    }
+    .row {
+      display: flex;
+      gap: 8px;
+      margin: 12px 0;
+    }
+    input {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+    }
+    button {
+      padding: 10px 12px;
+      font-size: 16px;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 12px 0;
+    }
+    li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      margin-bottom: 8px;
+    }
+    li.done span {
+      text-decoration: line-through;
+      opacity: 0.6;
+    }
+    .small {
+      font-size: 12px;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Ma To-Do</h1>
+
+  <div class="row">
+    <input id="taskInput" placeholder="Ajouter une tâche…" />
+    <button id="addBtn" type="button">Ajouter</button>
+  </div>
+
+  <ul id="list"></ul>
+
+  <div class="row">
+    <button id="clearDone" type="button">Supprimer les tâches finies</button>
+    <button id="clearAll" type="button">Tout effacer</button>
+  </div>
+
+  <p class="small">Les tâches sont sauvegardées dans le navigateur.</p>
+
+  <script>
+    const STORAGE_KEY = "todo_v1";
+
+    const input = document.getElementById("taskInput");
+    const list = document.getElementById("list");
+    const addBtn = document.getElementById("addBtn");
+    const clearDone = document.getElementById("clearDone");
+    const clearAll = document.getElementById("clearAll");
+
+    let tasks = load();
+
+    function save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    }
+
+    function load() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function render() {
+      list.innerHTML = "";
+      tasks.forEach((t, idx) => {
+        const li = document.createElement("li");
+        if (t.done) li.classList.add("done");
+
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = t.done;
+        cb.addEventListener("change", () => {
+          tasks[idx].done = cb.checked;
+          save();
+          render();
+        });
+
+        const span = document.createElement("span");
+        span.textContent = t.text;
+
+        const del = document.createElement("button");
+        del.textContent = "✕";
+        del.addEventListener("click", () => {
+          tasks.splice(idx, 1);
+          save();
+          render();
+        });
+
+        li.append(cb, span, del);
+        list.appendChild(li);
+      });
+    }
+
+    function addTask() {
+      const text = input.value.trim();
+      if (!text) return;
+      tasks.unshift({ text, done: false });
+      input.value = "";
+      save();
+      render();
+    }
+
+    addBtn.addEventListener("click", addTask);
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter") addTask();
+    });
+
+    clearDone.addEventListener("click", () => {
+      tasks = tasks.filter(t => !t.done);
+      save();
+      render();
+    });
+
+    clearAll.addEventListener("click", () => {
+      tasks = [];
+      save();
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
