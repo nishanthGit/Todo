@@ -6,32 +6,14 @@
   <title>Ma To-Do</title>
 
   <style>
-    body {
-      font-family: -apple-system, system-ui, Arial;
-      margin: 20px;
-    }
-    h1 {
-      font-size: 22px;
-    }
-    .row {
-      display: flex;
-      gap: 8px;
-      margin: 12px 0;
-    }
-    input {
-      flex: 1;
-      padding: 10px;
-      font-size: 16px;
-    }
-    button {
-      padding: 10px 12px;
-      font-size: 16px;
-    }
-    ul {
-      list-style: none;
-      padding: 0;
-      margin: 12px 0;
-    }
+    body { font-family: -apple-system, system-ui, Arial; margin: 20px; }
+    h1 { font-size: 22px; margin: 0 0 12px; }
+
+    .row { display: flex; gap: 8px; margin: 12px 0; }
+    input { flex: 1; padding: 10px; font-size: 16px; }
+    button { padding: 10px 12px; font-size: 16px; cursor: pointer; }
+
+    ul { list-style: none; padding: 0; margin: 12px 0; }
     li {
       display: flex;
       align-items: center;
@@ -41,13 +23,67 @@
       border-radius: 10px;
       margin-bottom: 8px;
     }
-    li.done span {
-      text-decoration: line-through;
-      opacity: 0.6;
+    li.done span { text-decoration: line-through; opacity: 0.6; }
+    .small { font-size: 12px; opacity: 0.7; }
+
+    /* =========================
+       Mascotte (1 fois par jour)
+       ========================= */
+    .mascot{
+      position: fixed;
+      right: 14px;     /* coin en bas à droite */
+      bottom: 14px;
+      width: 140px;
+      height: 140px;
+      pointer-events: none;
+      z-index: 9999;
+
+      transform: translateY(170px) scale(0.95);
+      opacity: 0;
+      transition: transform 420ms ease, opacity 420ms ease;
     }
-    .small {
-      font-size: 12px;
-      opacity: 0.7;
+
+    .mascot.show{
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+
+    .mascot.hide{
+      transform: translateY(190px) scale(0.92);
+      opacity: 0;
+    }
+
+    .mascot img{
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 14px 24px rgba(0,0,0,.18));
+    }
+
+    .mascot .speech{
+      position: absolute;
+      right: 120px;
+      bottom: 78px;
+      background: rgba(255,255,255,0.96);
+      border: 1px solid rgba(0,0,0,0.10);
+      padding: 8px 10px;
+      border-radius: 12px;
+      font-size: 14px;
+      color: #1f2430;
+      box-shadow: 0 10px 22px rgba(0,0,0,.08);
+      transform: translateY(4px);
+      opacity: 0;
+      transition: opacity 260ms ease, transform 260ms ease;
+      white-space: nowrap;
+    }
+
+    .mascot.show .speech{
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      .mascot, .mascot .speech{ transition: none; }
     }
   </style>
 </head>
@@ -56,7 +92,7 @@
   <h1>Ma To-Do</h1>
 
   <div class="row">
-    <input id="taskInput" placeholder="Ajouter une tâche…" />
+    <input id="taskInput" placeholder="Ajouter une tâche..." />
     <button id="addBtn" type="button">Ajouter</button>
   </div>
 
@@ -67,9 +103,18 @@
     <button id="clearAll" type="button">Tout effacer</button>
   </div>
 
-  <p class="small">Les tâches sont sauvegardées dans le navigateur.</p>
+  <p class="small">Les tâches sont sauvegardées dans ton navigateur (localStorage).</p>
+
+  <!-- Mascotte (s'affiche 1 fois par jour) -->
+  <div id="mascot" class="mascot" aria-hidden="true">
+    <img id="mascotImg" alt="Mascotte" />
+    <div class="speech">Coucou !</div>
+  </div>
 
   <script>
+    // ----------------------
+    // To-do list (localStorage)
+    // ----------------------
     const STORAGE_KEY = "todo_v1";
 
     const input = document.getElementById("taskInput");
@@ -111,6 +156,7 @@
         span.textContent = t.text;
 
         const del = document.createElement("button");
+        del.type = "button";
         del.textContent = "✕";
         del.addEventListener("click", () => {
           tasks.splice(idx, 1);
@@ -133,7 +179,7 @@
     }
 
     addBtn.addEventListener("click", addTask);
-    input.addEventListener("keydown", e => {
+    input.addEventListener("keydown", (e) => {
       if (e.key === "Enter") addTask();
     });
 
@@ -144,12 +190,65 @@
     });
 
     clearAll.addEventListener("click", () => {
+      if (!confirm("Tout effacer ?")) return;
       tasks = [];
       save();
       render();
     });
 
     render();
+
+    // ----------------------
+    // Mascotte "1 fois par jour"
+    // ----------------------
+    (function () {
+      // Mets dans ton repo une image que TU as le droit d'utiliser.
+      // Recommandé : ajoute un fichier "mickey.png" à côté de index.html
+      const MICKEY_IMAGE_URL = "./mickey.png";
+
+      const KEY = "mascot_last_shown_yyyymmdd";
+      const mascot = document.getElementById("mascot");
+      const mascotImg = document.getElementById("mascotImg");
+
+      function yyyymmdd(d) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        return `${y}${m}${day}`;
+      }
+
+      const today = yyyymmdd(new Date());
+      const lastShown = localStorage.getItem(KEY);
+
+      // Déjà montré aujourd'hui => on ne montre pas
+      if (lastShown === today) {
+        mascot.remove();
+        return;
+      }
+
+      // Prépare l'image
+      mascotImg.src = MICKEY_IMAGE_URL;
+
+      // Si l'image ne charge pas, on enlève la mascotte (évite un carré vide)
+      mascotImg.onerror = () => mascot.remove();
+
+      // Animation d'entrée
+      setTimeout(() => mascot.classList.add("show"), 250);
+
+      // Visible quelques secondes, puis sort dans le même coin
+      const SHOW_MS = 2600;
+
+      setTimeout(() => {
+        mascot.classList.add("hide");
+        mascot.classList.remove("show");
+      }, 250 + SHOW_MS);
+
+      // Nettoyage
+      setTimeout(() => mascot.remove(), 250 + SHOW_MS + 700);
+
+      // Marque "déjà montré aujourd'hui"
+      localStorage.setItem(KEY, today);
+    })();
   </script>
 </body>
 </html>
