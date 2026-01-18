@@ -33,12 +33,12 @@
       position: fixed;
       right: 14px;     /* coin en bas à droite */
       bottom: 14px;
-      width: 140px;
-      height: 140px;
+      width: 160px;
+      height: 160px;
       pointer-events: none;
       z-index: 9999;
 
-      transform: translateY(170px) scale(0.95);
+      transform: translateY(190px) scale(0.95);
       opacity: 0;
       transition: transform 420ms ease, opacity 420ms ease;
     }
@@ -49,7 +49,7 @@
     }
 
     .mascot.hide{
-      transform: translateY(190px) scale(0.92);
+      transform: translateY(210px) scale(0.92);
       opacity: 0;
     }
 
@@ -62,8 +62,8 @@
 
     .mascot .speech{
       position: absolute;
-      right: 120px;
-      bottom: 78px;
+      right: 138px;
+      bottom: 92px;
       background: rgba(255,255,255,0.96);
       border: 1px solid rgba(0,0,0,0.10);
       padding: 8px 10px;
@@ -199,12 +199,11 @@
     render();
 
     // ----------------------
-    // Mascotte "1 fois par jour"
+    // Mascotte "1 fois par jour" (GIF)
     // ----------------------
     (function () {
-      // Mets dans ton repo une image que TU as le droit d'utiliser.
-      // Recommandé : ajoute un fichier "mickey.png" à côté de index.html
-      const MICKEY_IMAGE_URL = "./Mickey.png.gif";
+      // IMPORTANT : nom exact du fichier dans le repo (casse sensible)
+      const MICKEY_GIF = "./Mickey.png.gif";
 
       const KEY = "mascot_last_shown_yyyymmdd";
       const mascot = document.getElementById("mascot");
@@ -220,22 +219,24 @@
       const today = yyyymmdd(new Date());
       const lastShown = localStorage.getItem(KEY);
 
-      // Déjà montré aujourd'hui => on ne montre pas
+      // Déjà montré aujourd'hui => ne pas afficher
       if (lastShown === today) {
         mascot.remove();
         return;
       }
 
-      // Prépare l'image
-      mascotImg.src = MICKEY_IMAGE_URL;
+      // Cache-buster pour forcer le rechargement du GIF (et rejouer l'animation)
+      mascotImg.src = MICKEY_GIF + "?v=" + Date.now();
 
-      // Si l'image ne charge pas, on enlève la mascotte (évite un carré vide)
-      mascotImg.onerror = () => mascot.remove();
+      mascotImg.onerror = () => {
+        // Si l'image ne charge pas, on supprime la mascotte
+        mascot.remove();
+      };
 
       // Animation d'entrée
       setTimeout(() => mascot.classList.add("show"), 250);
 
-      // Visible quelques secondes, puis sort dans le même coin
+      // Visible puis sort dans le coin bas
       const SHOW_MS = 2600;
 
       setTimeout(() => {
